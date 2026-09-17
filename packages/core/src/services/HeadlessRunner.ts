@@ -92,6 +92,10 @@ export class HeadlessSession extends AbstractTerminalSession {
       this.outputEmitter.emit('output', `\nProcess error: ${err.message}\n`);
       this.baseHandleExit(-1);
     });
+
+    if (!this.interactive) {
+      this.process.stdin?.end();
+    }
   }
 
   kill(): void {
@@ -105,7 +109,7 @@ export class HeadlessSession extends AbstractTerminalSession {
   getOutput(): string { return this.outputBuffer; }
 
   write(text: string): void {
-    if (this.process?.stdin && !this.process.killed) {
+    if (this.process?.stdin && !this.process.killed && !this.process.stdin.writableEnded) {
       this.process.stdin.write(text);
     }
   }

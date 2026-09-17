@@ -29,7 +29,7 @@ function toCrlf(text: string): string {
  * as a real terminal resize would.
  */
 export class VsCodeTerminalRunner extends HeadlessRunner {
-  protected override readonly defaultInteractive = true;
+  protected override readonly defaultInteractive = process.platform !== 'win32';
 
   private terminals = new Map<string, vscode.Terminal>();
 

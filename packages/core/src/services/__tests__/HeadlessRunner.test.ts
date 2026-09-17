@@ -24,7 +24,11 @@ function fakeRegistry(m: RunnerPluginManifest): RunnerRegistry {
 class FakeChildProcess extends EventEmitter {
   stdout = new EventEmitter();
   stderr = new EventEmitter();
-  stdin = { write: vi.fn() };
+  stdin = {
+    writableEnded: false,
+    write: vi.fn(),
+    end: vi.fn(() => { this.stdin.writableEnded = true; }),
+  };
   killed = false;
   kill = vi.fn((_signal?: string) => { this.killed = true; this.emit('close', 0); return true; });
 }
@@ -166,13 +170,14 @@ describe('HeadlessRunner', () => {
     expect(runner.activeCount).toBe(0);
   });
 
-  it('forwards write() to the child stdin', async () => {
+  it('closes stdin after starting a non-interactive session and ignores later writes', async () => {
     const m = manifest();
     const { runner, child } = makeRunner();
     const session = await runner.spawn(baseOpts(m));
 
     session.write('y\n');
-    expect(child.stdin.write).toHaveBeenCalledWith('y\n');
+    expect(child.stdin.end).toHaveBeenCalledOnce();
+    expect(child.stdin.write).not.toHaveBeenCalled();
   });
 });
 
