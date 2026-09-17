@@ -295,15 +295,18 @@ describe('VsCodeTerminalRunner', () => {
     expect(offenders).toEqual([]);
   });
 
-  it('closes the terminal on a clean exit', async () => {
+  it('retains the terminal on a clean exit and explains that it can be closed manually', async () => {
     const { runner, child, spawnOpts } = makeRunner();
     await runner.spawn(spawnOpts);
     const closed: number[] = [];
+    const written: string[] = [];
     __terminals[0].pty.onDidClose?.((code) => closed.push(code));
+    __terminals[0].pty.onDidWrite((data) => written.push(data));
     await __terminals[0].pty.open({ columns: 100, rows: 40 });
 
     child.emit('close', 0);
 
-    expect(closed).toEqual([0]);
+    expect(closed).toEqual([]);
+    expect(written.join('')).toContain('exited with code 0 — terminal retained; close it manually when finished.');
   });
 });

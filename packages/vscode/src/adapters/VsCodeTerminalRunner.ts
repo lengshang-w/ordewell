@@ -84,7 +84,7 @@ export class VsCodeTerminalRunner extends HeadlessRunner {
 
     session.onOutput((text) => writeEmitter.fire(toCrlf(text)));
     session.onExit((code) => {
-      if (code === 0) closeEmitter.fire(0);
+      if (code === 0) writeEmitter.fire(`\r\n\x1b[32m[ordewell] ${opts.runner} exited with code 0 — terminal retained; close it manually when finished.\x1b[0m\r\n`);
       else writeEmitter.fire(`\r\n\x1b[33m[ordewell] ${opts.runner} exited with code ${code}\x1b[0m\r\n`);
     });
 
