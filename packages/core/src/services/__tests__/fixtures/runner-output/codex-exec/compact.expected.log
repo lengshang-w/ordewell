@@ -1,0 +1,18 @@
+Warning: Codex configuration: Under-development features enabled: respect_system_proxy. Under-development features are incomplete and may behave unpredictably.
+I’ll inspect only the repository’s root `package.json` and report its declared name and version.
+Reading package.json
+Read package.json (exit code 0)
+  {
+    "private": true,
+    "name": "ordewell-monorepo",
+  … 25 lines omitted …
+    }
+  }
+Name: `ordewell-monorepo`  
+Version: `0.4.19`
+Completed
+stderr | 2026-09-17T13:34:43.446159Z  WARN codex_skills::interface: ignoring interface.icon_small: icon path with '..' must resolve under plugin assets/
+stderr | 2026-09-17T13:34:43.446195Z  WARN codex_skills::interface: ignoring interface.icon_large: icon path with '..' must resolve under plugin assets/
+stderr | 2026-09-17T13:34:43.479145Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell
+stderr | 2026-09-17T13:34:45.378735Z  WARN codex_skills::interface: ignoring interface.icon_small: icon path with '..' must resolve under plugin assets/
+stderr | 2026-09-17T13:34:45.378768Z  WARN codex_skills::interface: ignoring interface.icon_large: icon path with '..' must resolve under plugin assets/

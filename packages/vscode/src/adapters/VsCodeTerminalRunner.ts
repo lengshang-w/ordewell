@@ -60,6 +60,7 @@ export class VsCodeTerminalRunner extends HeadlessRunner {
           // Only meaningful when script is present; wrapWithPty ignores it otherwise.
           controlChannel: true,
         });
+        session.configureOutput({ codexExecJson: prepared.codexExecJson, mode: opts.outputMode ?? 'compact' });
         session.start(
           prepared.launch,
           cwd,
