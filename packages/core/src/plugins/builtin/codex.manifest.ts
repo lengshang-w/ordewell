@@ -23,7 +23,7 @@ export const CODEX_MANIFEST: RunnerPluginManifest = {
     // without these it stalls on a menu instead of working. `-a` does not exist
     // on `exec`, hence the shape gate rather than a `{{if headless}}` one.
     argsTemplate: [
-      '{{if headlessSession}}', 'exec', '--skip-git-repo-check', '{{/if}}',
+      '{{if headlessSession}}', 'exec', '--json', '--skip-git-repo-check', '{{/if}}',
       '{{feature:codexAutoReview}}',
       '{{if interactive}}', '-a', 'never', '{{/if}}',
       '{{if projectTrust}}', '-c', '{{projectTrust}}', '{{/if}}',

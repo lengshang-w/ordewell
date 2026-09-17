@@ -340,7 +340,7 @@ describe('resolveArgs — Codex manifest', () => {
     });
     expect(result.command).toBe('codex');
     expect(result.args).toEqual([
-      'exec', '--skip-git-repo-check',
+      'exec', '--json', '--skip-git-repo-check',
       '-c', 'approval_policy="on-request"',
       '-c', 'approvals_reviewer="auto_review"',
       '-c', 'sandbox_permissions=["disk-full-read-access"]',
@@ -417,7 +417,7 @@ describe('resolveArgs — Codex manifest', () => {
       prompt: 'analyze', mode: 'plan', model: 'gpt-5.5', headless: true,
     });
     expect(result.args).toEqual([
-      'exec', '--skip-git-repo-check',
+      'exec', '--json', '--skip-git-repo-check',
       '-c', 'sandbox_permissions=["disk-full-read-access"]',
       '-m', 'gpt-5.5',
       '--sandbox', 'read-only',

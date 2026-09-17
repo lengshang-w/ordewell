@@ -1,7 +1,11 @@
+export type RunnerOutputMode = 'compact' | 'raw';
+
 export interface ITerminalSession {
   id: string;
   taskId: string;
   onOutput(callback: (text: string) => void): void;
+  /** Raw runner bytes for verdict evidence and diagnostics, when the transport formats display output. */
+  onRawOutput?(callback: (text: string) => void): void;
   onExit(callback: (code: number) => void): void;
   kill(): void;
   getOutput(): string;
@@ -39,6 +43,8 @@ export interface ITerminalRunner {
     /** Task order and title — surfaces use these to label task_started/output events. */
     order?: number;
     title?: string;
+    /** Presentation mode for runner output; execution evidence always remains raw. */
+    outputMode?: RunnerOutputMode;
     /**
      * The owning plan session. Task ids are only unique within one plan, so
      * transports that key OS resources by task (tmux windows, log files) need

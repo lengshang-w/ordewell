@@ -7,6 +7,7 @@ import { augmentedPath, withPath } from '../utils/shellPath';
 import { stripAnsi, wrapWithPty, type PtyWrapOptions } from '../utils/shell';
 import { planDirectLaunch, type LaunchDeps, type LaunchPlan } from '../utils/launch';
 import { killTree } from '../utils/processTree';
+import { CodexExecJsonFormatter, type RunnerOutputMode } from './CodexExecJsonFormatter';
 
 export type SpawnFn = (
   command: string,
@@ -47,12 +48,17 @@ export class HeadlessSession extends AbstractTerminalSession {
   private process: ChildProcess | null = null;
   private outputBuffer = '';
   private controlStream: Writable | null = null;
+  private formatter: CodexExecJsonFormatter | null = null;
 
   constructor(id: string, taskId: string, private spawnImpl: SpawnFn, readonly interactive: boolean = false) {
     super(id, taskId);
   }
 
   get isStarted(): boolean { return this.process !== null; }
+
+  configureOutput(opts: { codexExecJson: boolean; mode: RunnerOutputMode }): void {
+    this.formatter = opts.codexExecJson ? new CodexExecJsonFormatter({ mode: opts.mode }) : null;
+  }
 
   start(launch: LaunchPlan, cwd: string, resolvedPath: string, env?: Record<string, string>, options?: { controlChannel?: boolean }): void {
     // Killed while the spawn was still in flight — starting now leaks an agent
@@ -78,15 +84,23 @@ export class HeadlessSession extends AbstractTerminalSession {
       this.controlStream?.on('error', () => {});
     }
 
-    const onData = (data: Buffer) => {
+    const onData = (data: Buffer, stream: 'stdout' | 'stderr') => {
       const raw = data.toString();
       this.outputBuffer += stripAnsi(raw);
-      this.outputEmitter.emit('output', raw);
+      this.rawOutputEmitter.emit('output', raw);
+      const display = stream === 'stdout'
+        ? this.formatter?.formatStdout(raw) ?? raw
+        : this.formatter?.formatStderr(raw) ?? raw;
+      if (display) this.outputEmitter.emit('output', display);
     };
-    this.process.stdout?.on('data', onData);
-    this.process.stderr?.on('data', onData);
+    this.process.stdout?.on('data', (data: Buffer) => onData(data, 'stdout'));
+    this.process.stderr?.on('data', (data: Buffer) => onData(data, 'stderr'));
 
-    this.process.on('close', (code) => { this.baseHandleExit(code ?? -1); });
+    this.process.on('close', (code) => {
+      const display = this.formatter?.flush();
+      if (display) this.outputEmitter.emit('output', display);
+      this.baseHandleExit(code ?? -1);
+    });
     this.process.on('error', (err) => {
       this.outputBuffer += `\nProcess error: ${err.message}\n`;
       this.outputEmitter.emit('output', `\nProcess error: ${err.message}\n`);
@@ -131,6 +145,7 @@ export interface PreparedLaunch {
   env: Record<string, string>;
   /** True when the invocation was wrapped in `script` to allocate a PTY. */
   pty: boolean;
+  codexExecJson: boolean;
 }
 
 export class HeadlessRunner extends AbstractRunner<HeadlessSession> {
@@ -196,6 +211,7 @@ export class HeadlessRunner extends AbstractRunner<HeadlessSession> {
       resolvedPath,
       env: invocation.env,
       pty,
+      codexExecJson: opts.runner === 'codex' && invocation.args.includes('exec') && invocation.args.includes('--json'),
     };
   }
 
@@ -207,6 +223,7 @@ export class HeadlessRunner extends AbstractRunner<HeadlessSession> {
     const modeStr = opts.mode === 'plan' ? 'plan' : 'build';
     console.error(`[headless] Starting ${opts.runner} [${modeStr}] (${opts.modelId || 'default'}) for task ${opts.taskId.slice(0, 8)}${prepared.pty ? ' (PTY)' : ''}`);
 
+    session.configureOutput({ codexExecJson: prepared.codexExecJson, mode: opts.outputMode ?? 'compact' });
     session.start(prepared.launch, opts.cwd, prepared.resolvedPath, prepared.env);
     this.registerSession(id, session);
     return session;
