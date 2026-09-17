@@ -29,6 +29,7 @@
     "package": "npm run package -w packages/vscode",
     "typecheck": "npm run typecheck -ws --if-present",
     "test": "npm run test -ws --if-present",
+    "test:windows": "npm run test:windows -ws --if-present",
     "build:web": "npm run build -w packages/web",
     "start": "node packages/cli/dist/main.js tui"
   },
