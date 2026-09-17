@@ -24,8 +24,10 @@ export const CODEX_MANIFEST: RunnerPluginManifest = {
     // on `exec`, hence the shape gate rather than a `{{if headless}}` one.
     argsTemplate: [
       '{{if headlessSession}}', 'exec', '--skip-git-repo-check', '{{/if}}',
+      '{{feature:codexAutoReview}}',
       '{{if interactive}}', '-a', 'never', '{{/if}}',
       '{{if projectTrust}}', '-c', '{{projectTrust}}', '{{/if}}',
+      '-c', 'sandbox_permissions=["disk-full-read-access"]',
       '{{if model}}', '-m', '{{model}}', '{{/if}}',
       '{{if thinking}}', '{{feature:reasoningEffortConfig}}', '{{/if}}',
       '--sandbox', '{{feature:permissionModeVal}}',
@@ -40,9 +42,9 @@ export const CODEX_MANIFEST: RunnerPluginManifest = {
     planMode: true,
     planModeFlag: '--sandbox',
     permissionModeValues: {
-      // Map mode IDs to --sandbox CLI values. Approvals are off on both shapes
-      // (implicitly under `exec`, via `-a never` in the TUI), so the sandbox
-      // axis is the whole permission story for a Codex task.
+      // Map mode IDs to --sandbox CLI values. Non-interactive agent/build
+      // sessions add a separate auto-reviewed approval boundary; interactive
+      // sessions keep the TUI's approval policy disabled with `-a never`.
       'agent': 'workspace-write',
       'plan': 'read-only',
       'fullAccess': 'danger-full-access',

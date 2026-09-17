@@ -210,6 +210,17 @@ function resolveToken(token: string, manifest: RunnerPluginManifest, ctx: Resolv
     return `-c model_reasoning_effort=${effort}`;
   }
 
+  // Keep Codex's workspace-write sandbox intact while allowing requests that
+  // cross its boundary to be auto-reviewed. This is intentionally limited to
+  // the non-interactive write-capable shapes: plan stays read-only and full
+  // access keeps its original unrestricted semantics.
+  if (token === '{{feature:codexAutoReview}}') {
+    const mode = ctx.mode || 'build';
+    return !isInteractive(ctx) && (mode === 'agent' || mode === 'build')
+      ? '-c approval_policy="on-request" -c approvals_reviewer="auto_review"'
+      : '';
+  }
+
   // Maps the current mode to the runner's --permission-mode CLI value.
   if (token === '{{feature:permissionModeVal}}') {
     const mode = ctx.mode || 'default';
