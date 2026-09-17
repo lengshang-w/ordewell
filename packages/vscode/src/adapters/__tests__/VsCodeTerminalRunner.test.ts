@@ -174,7 +174,8 @@ describe('VsCodeTerminalRunner', () => {
     expect(session.writeControl).toBeDefined();
   });
 
-  it('kills the child when the user closes the terminal', async () => {
+  // TODO(windows-tests): inject killTree so the Windows taskkill route can be asserted safely.
+  it.skipIf(process.platform === 'win32')('kills the child when the user closes the terminal', async () => {
     const { runner, child, spawnOpts } = makeRunner();
     await runner.spawn(spawnOpts);
     await __terminals[0].pty.open({ columns: 100, rows: 40 });

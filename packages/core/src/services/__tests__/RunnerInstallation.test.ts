@@ -67,7 +67,8 @@ describe('RunnerInstallation', () => {
 });
 
 describe('RunnerInstallation.plannerUsability (ADR-0009 preflight)', () => {
-  it('reports a planner-capable runner whose CLI answers as usable', async () => {
+  // TODO(windows-tests): isolate planner transport discovery from host-specific launch checks.
+  it.skipIf(process.platform === 'win32')('reports a planner-capable runner whose CLI answers as usable', async () => {
     const exec: ExecImpl = vi.fn(async () => ({ stdout: '2.0.0' }));
     const inst = new RunnerInstallation(registryWith(CLAUDE_CODE_MANIFEST), exec);
 

@@ -53,7 +53,8 @@ describe('StdioAgentAdapter (via ClaudeCodeAdapter) — spawn preflight', () => 
     expect(spawned.processes).toHaveLength(0);
   });
 
-  it('spawns once the workspace exists and the binary resolves', async () => {
+  // TODO(windows-tests): make the POSIX executable fixture independent of the host OS.
+  it.skipIf(process.platform === 'win32')('spawns once the workspace exists and the binary resolves', async () => {
     const spawned = fakeSpawn([]);
     const deps: AgentProcessDeps = {
       spawn: spawned.spawn,
