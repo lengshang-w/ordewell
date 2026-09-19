@@ -1,4 +1,6 @@
-export type RunnerOutputMode = 'compact' | 'raw';
+import type { RunnerOutputMode } from '../models/Task';
+
+export type { RunnerOutputMode } from '../models/Task';
 
 export interface ITerminalSession {
   id: string;

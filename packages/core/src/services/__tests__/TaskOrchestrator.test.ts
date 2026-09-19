@@ -514,14 +514,14 @@ describe('TaskOrchestrator', () => {
       const orchestrator = makeOrchestrator({ terminalRunner: { spawn } });
       orchestrator.setWorkspaceRoot(() => '/repo');
       orchestrator.loadPlan([
-        createTask({ id: 't1', order: 1, title: 'Selected', prompt: 'do selected', completionMarker: 'mk-1' }),
+        createTask({ id: 't1', order: 1, title: 'Selected', prompt: 'do selected', completionMarker: 'mk-1', outputMode: 'raw' }),
         createTask({ id: 't2', order: 2, title: 'Following', prompt: 'do following' }),
       ]);
 
       await orchestrator.runTask('t1');
 
       expect(spawn).toHaveBeenCalledTimes(1);
-      expect(spawn).toHaveBeenCalledWith(expect.objectContaining({ taskId: 't1' }));
+      expect(spawn).toHaveBeenCalledWith(expect.objectContaining({ taskId: 't1', outputMode: 'raw' }));
       expect(orchestrator.isRunning).toBe(true);
       expect(orchestrator.storeInstance.get('t1')?.status).toBe('in_progress');
 

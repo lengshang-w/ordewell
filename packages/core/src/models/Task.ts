@@ -32,6 +32,8 @@ export interface TaskOutputSummary {
 export type TaskType = 'ai' | 'user';
 export type TaskStatus = 'pending' | 'approved' | 'in_progress' | 'completed' | 'failed' | 'blocked' | 'awaiting_user';
 export type TaskMode = string;
+/** How a Codex runner's visible terminal activity is presented. */
+export type RunnerOutputMode = 'compact' | 'raw';
 
 export interface TaskModelAssignment {
   modelId: string;
@@ -65,6 +67,8 @@ export interface Task {
   assignedRunner: RunnerId;
   thinkingEffort?: string;
   taskMode?: TaskMode;
+  /** Per-task terminal presentation choice; ignored by runners without compact output support. */
+  outputMode?: RunnerOutputMode;
   completionMarker: string;
   autonomy?: 'AFK' | 'HITL';
   sliceType?: 'HITL' | 'AFK';
@@ -462,6 +466,7 @@ export function createTask(overrides: Partial<Task> = {}): Task {
     assignedRunner: overrides.assignedRunner ?? 'claude-code',
     thinkingEffort: overrides.thinkingEffort,
     taskMode: overrides.taskMode ?? 'build',
+    outputMode: overrides.outputMode,
     completionMarker: overrides.completionMarker ?? uuidv4(),
     autonomy: overrides.autonomy,
     sliceType: overrides.sliceType,

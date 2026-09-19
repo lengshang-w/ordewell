@@ -1,4 +1,4 @@
-export type RunnerOutputMode = 'compact' | 'raw';
+import type { RunnerOutputMode } from '../models/Task';
 
 export interface CodexExecJsonFormatterOptions {
   mode: RunnerOutputMode;

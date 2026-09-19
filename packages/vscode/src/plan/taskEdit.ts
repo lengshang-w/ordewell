@@ -1,5 +1,5 @@
 import { dependentsOf, flattenTasks } from '@ordewell/core';
-import type { Task, TaskModelAssignment } from '@ordewell/core';
+import type { RunnerOutputMode, Task, TaskModelAssignment } from '@ordewell/core';
 
 /**
  * A per-task edit the webview sent, as the host should act on it.
@@ -14,6 +14,7 @@ export type TaskEdit =
   | { kind: 'runner'; runner: string }
   | { kind: 'model'; assignment: TaskModelAssignment }
   | { kind: 'mode'; mode: string }
+  | { kind: 'outputMode'; outputMode: RunnerOutputMode }
   | { kind: 'prompt'; prompt: string }
   | { kind: 'dependencies'; dependencies: string[] }
   | { kind: 'remove' };
@@ -40,6 +41,9 @@ export function classifyTaskEdit(text: string): TaskEdit {
   }
 
   if (typeof parsed.mode === 'string') return { kind: 'mode', mode: parsed.mode };
+  if (parsed.outputMode === 'compact' || parsed.outputMode === 'raw') {
+    return { kind: 'outputMode', outputMode: parsed.outputMode };
+  }
   if (typeof parsed.prompt === 'string') return { kind: 'prompt', prompt: parsed.prompt };
   // Checked by shape, not truthiness: clearing every dependency is a legitimate
   // edit, and an empty array must not fall through to `remove`.

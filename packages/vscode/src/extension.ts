@@ -683,6 +683,12 @@ function setupChatListener(context: vscode.ExtensionContext): void {
               } else if (edit.kind === 'mode') {
                 const task = findTask(currentPlan, ctx.taskId);
                 if (task) { task.taskMode = edit.mode; persistState(persistDeps()); }
+              } else if (edit.kind === 'outputMode') {
+                await session.updateTask(ctx.taskId, { outputMode: edit.outputMode });
+                if (session.planState) currentPlan = session.planState;
+                chatProvider.showPlan(currentPlan);
+                persistState(persistDeps());
+                saveCurrentSession(persistDeps());
               } else if (edit.kind === 'prompt') {
                 await session.updateTask(ctx.taskId, { prompt: edit.prompt, description: edit.prompt || undefined });
                 chatProvider.showPlan(currentPlan);

@@ -566,6 +566,7 @@ export class TaskOrchestrator {
         thinkingEffort: task.assignedModel?.thinkingEffort,
         modelVariants: task.assignedModel?.availableVariants,
         mode: task.taskMode ?? 'build',
+        outputMode: task.outputMode ?? 'compact',
         cwd,
         registry: this.registry ?? undefined,
         order: task.order,
