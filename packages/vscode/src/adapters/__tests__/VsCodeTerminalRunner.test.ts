@@ -23,7 +23,11 @@ function manifest(overrides: Partial<RunnerPluginManifest['runner']> = {}): Runn
 class FakeChildProcess extends EventEmitter {
   stdout = new EventEmitter();
   stderr = new EventEmitter();
-  stdin = { write: vi.fn() };
+  stdin = {
+    writableEnded: false,
+    write: vi.fn(),
+    end: vi.fn(() => { this.stdin.writableEnded = true; }),
+  };
   /** fd 3: the PTY control channel, present when the spawn used a 4th pipe. */
   stdio: Array<unknown> = [
     this.stdin,
@@ -85,10 +89,23 @@ describe('VsCodeTerminalRunner', () => {
     expect(streamed.join('')).toContain('<<<ORDEWELL_DONE_abc123>>>');
   });
 
-  it('marks its session interactive so resume tokens submit with Enter, not just type', async () => {
+  it.skipIf(process.platform === 'win32')('marks its session interactive outside Windows so resume tokens submit with Enter, not just type', async () => {
     const { runner, spawnOpts } = makeRunner();
     const session = await runner.spawn(spawnOpts);
     expect(session.interactive).toBe(true);
+  });
+
+  it.skipIf(process.platform !== 'win32')('uses a non-interactive session on Windows and closes stdin after launch', async () => {
+    const { runner, child, spawnImpl, spawnOpts } = makeRunner({ hasScript: true });
+    const session = await runner.spawn(spawnOpts);
+    expect(session.interactive).toBe(false);
+
+    await __terminals[0].pty.open({ columns: 100, rows: 40 });
+
+    expect(spawnImpl.mock.calls[0][0]).toBe('test-cli');
+    expect(child.stdin.end).toHaveBeenCalledOnce();
+    __terminals[0].pty.handleInput?.('ORDEWELL_CONTINUE\r');
+    expect(child.stdin.write).not.toHaveBeenCalled();
   });
 
   it('renders child output into the pseudoterminal with CRLF line endings', async () => {
@@ -116,7 +133,7 @@ describe('VsCodeTerminalRunner', () => {
 
   // A TUI that reads its size via ioctl (all of OpenCode, Claude Code, Codex)
   // gets `script`'s 0x0 PTY unless stty sets the tab's real size on the slave.
-  it('sizes the PTY to the tab before the agent starts', async () => {
+  it.skipIf(process.platform === 'win32')('sizes the PTY to the tab before the agent starts', async () => {
     const { runner, spawnImpl, spawnOpts } = makeRunner({ hasScript: true });
     await runner.spawn(spawnOpts);
 
@@ -126,7 +143,7 @@ describe('VsCodeTerminalRunner', () => {
     expect(args[4]).toContain('stty cols 120 rows 40');
   });
 
-  it('runs the interactive invocation under a PTY when script is available', async () => {
+  it.skipIf(process.platform === 'win32')('runs the interactive invocation under a PTY when script is available', async () => {
     const { runner, spawnImpl, spawnOpts } = makeRunner({ hasScript: true });
     await runner.spawn(spawnOpts);
 
@@ -139,7 +156,7 @@ describe('VsCodeTerminalRunner', () => {
       '/dev/null']);
   });
 
-  it('forwards terminal input to the child stdin', async () => {
+  it.skipIf(process.platform === 'win32')('forwards terminal input to the child stdin for interactive sessions', async () => {
     const { runner, child, spawnOpts } = makeRunner();
     await runner.spawn(spawnOpts);
     await __terminals[0].pty.open({ columns: 100, rows: 40 });
@@ -149,7 +166,7 @@ describe('VsCodeTerminalRunner', () => {
     expect(child.stdin.write).toHaveBeenCalledWith('ORDEWELL_CONTINUE\r');
   });
 
-  it('resizes the PTY when the terminal tab changes size', async () => {
+  it.skipIf(process.platform === 'win32')('resizes the PTY when the terminal tab changes size', async () => {
     const { runner, child, spawnOpts } = makeRunner({ hasScript: true });
     await runner.spawn(spawnOpts);
     await __terminals[0].pty.open({ columns: 100, rows: 40 });
@@ -197,7 +214,7 @@ describe('VsCodeTerminalRunner', () => {
     expect(spawnImpl).not.toHaveBeenCalled();
   });
 
-  it('starts the child anyway if the terminal is never rendered', async () => {
+  it.skipIf(process.platform === 'win32')('starts the child anyway if the terminal is never rendered', async () => {
     vi.useFakeTimers();
     const { runner, spawnImpl, spawnOpts } = makeRunner({ hasScript: true });
     await runner.spawn(spawnOpts);
@@ -210,7 +227,7 @@ describe('VsCodeTerminalRunner', () => {
     expect(spawnImpl.mock.calls[0][1][4]).toContain('stty cols 120 rows 30');
   });
 
-  it('surfaces a start-time failure in the tab instead of hanging silently', async () => {
+  it.skipIf(process.platform === 'win32')('surfaces a start-time failure in the tab instead of hanging silently', async () => {
     let probes = 0;
     const child = new FakeChildProcess();
     const spawnImpl = vi.fn().mockReturnValue(child);
@@ -277,15 +294,18 @@ describe('VsCodeTerminalRunner', () => {
     expect(offenders).toEqual([]);
   });
 
-  it('closes the terminal on a clean exit', async () => {
+  it('retains the terminal on a clean exit and explains that it can be closed manually', async () => {
     const { runner, child, spawnOpts } = makeRunner();
     await runner.spawn(spawnOpts);
     const closed: number[] = [];
+    const written: string[] = [];
     __terminals[0].pty.onDidClose?.((code) => closed.push(code));
+    __terminals[0].pty.onDidWrite((data) => written.push(data));
     await __terminals[0].pty.open({ columns: 100, rows: 40 });
 
     child.emit('close', 0);
 
-    expect(closed).toEqual([0]);
+    expect(closed).toEqual([]);
+    expect(written.join('')).toContain('exited with code 0 — terminal retained; close it manually when finished.');
   });
 });

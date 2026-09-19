@@ -6,6 +6,7 @@ export abstract class AbstractTerminalSession implements ITerminalSession {
   public taskId: string;
   protected exited = false;
   protected outputEmitter = new EventEmitter();
+  protected rawOutputEmitter = new EventEmitter();
   protected exitEmitter = new EventEmitter();
 
   constructor(id: string, taskId: string) {
@@ -21,6 +22,10 @@ export abstract class AbstractTerminalSession implements ITerminalSession {
 
   onOutput(callback: (text: string) => void): void {
     this.outputEmitter.on('output', callback);
+  }
+
+  onRawOutput(callback: (text: string) => void): void {
+    this.rawOutputEmitter.on('output', callback);
   }
 
   onExit(callback: (code: number) => void): void {

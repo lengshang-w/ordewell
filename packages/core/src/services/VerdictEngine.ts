@@ -287,7 +287,7 @@ export class VerdictEngine {
     this.generations.set(task.id, gen);
     this.buffers.set(task.id, '');
     this.checkpointCounts.set(task.id, 0);
-    session.onOutput((text: string) => {
+    const onEvidence = (text: string) => {
       if (this.generations.get(task.id) !== gen) return;
       this.touchIdle(task.id, gen);
       if (this.markerSeen.has(task.id)) return;
@@ -320,7 +320,9 @@ export class VerdictEngine {
         for (const l of this.checkpointListeners) l(task.id, summary);
       }
       this.checkpointCounts.set(task.id, matches.length);
-    });
+    };
+    if (session.onRawOutput) session.onRawOutput(onEvidence);
+    else session.onOutput(onEvidence);
     session.onExit((exitCode: number) => {
       if (this.generations.get(task.id) !== gen) return;
       const output = session.getOutput();

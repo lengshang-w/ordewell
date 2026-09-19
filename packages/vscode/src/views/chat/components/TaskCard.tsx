@@ -4,7 +4,7 @@ import ModelSelector, { getModelClass, providerLabel } from './ModelSelector';
 import DependencyPicker from './DependencyPicker';
 import { lastLine } from '../taskOutput';
 import { dependencyCandidates } from '@ordewell/core/plan-utils';
-import { Task, DiscoveredModel, TaskModelAssignment } from '@ordewell/core';
+import { Task, DiscoveredModel, TaskModelAssignment, RunnerOutputMode } from '@ordewell/core';
 
 export interface RunnerMode {
   id: string;
@@ -47,6 +47,7 @@ interface TaskCardProps {
   /** Called when this task's model dropdown opens, so a stale/degraded catalog self-heals. */
   onModelsRefreshNeeded?: () => void;
   onModeChange?: (taskId: string, mode: string) => void;
+  onOutputModeChange?: (taskId: string, outputMode: RunnerOutputMode) => void;
   onRemoveTask?: (taskId: string) => void;
   onPromptChange?: (taskId: string, prompt: string) => void;
   onRetry?: (taskId: string) => void;
@@ -128,7 +129,7 @@ export function runnerOptionsFor(runners: RunnerOption[] | undefined, assignedRu
   return [...runners, { id: assignedRunner, displayName: assignedRunner }];
 }
 
-export default function TaskCard({ task, models, modes, modelsByRunner, modesByRunner, runners, effectiveRunner, configuredProviders, modelApiMapping, isExecuting, output, idleSince, taskOrderMap, dependentCount, siblings, onDependenciesChange, onRunnerChange, onModelChange, onModelsRefreshNeeded, onModeChange, onRemoveTask, onPromptChange, onRetry, onSkip, onCancel, onForceStart, onMarkComplete, onMarkIncomplete, onRunTask, expanded: expandedProp, onExpandedChange }: TaskCardProps) {
+export default function TaskCard({ task, models, modes, modelsByRunner, modesByRunner, runners, effectiveRunner, configuredProviders, modelApiMapping, isExecuting, output, idleSince, taskOrderMap, dependentCount, siblings, onDependenciesChange, onRunnerChange, onModelChange, onModelsRefreshNeeded, onModeChange, onOutputModeChange, onRemoveTask, onPromptChange, onRetry, onSkip, onCancel, onForceStart, onMarkComplete, onMarkIncomplete, onRunTask, expanded: expandedProp, onExpandedChange }: TaskCardProps) {
   const [internalExpanded, setInternalExpanded] = useState(false);
   const isControlled = expandedProp !== undefined;
   const expanded = isControlled ? expandedProp : internalExpanded;
@@ -415,6 +416,17 @@ export default function TaskCard({ task, models, modes, modelsByRunner, modesByR
             </div>
           )}
 
+          {!isExecuting && task.type === 'ai' && task.assignedRunner === 'codex' && onOutputModeChange && (
+            <div className="model-selector" style={{ marginTop: '8px' }}>
+              <label htmlFor={`task-output-mode-${task.id}`}>Output</label>
+              <select id={`task-output-mode-${task.id}`} value={task.outputMode ?? 'compact'}
+                onChange={(e) => onOutputModeChange(task.id, e.target.value as RunnerOutputMode)}>
+                <option value="compact">Compact — concise activity stream</option>
+                <option value="raw">Raw — full Codex output</option>
+              </select>
+            </div>
+          )}
+
           {!isExecuting && task.type === 'ai' && onRunTask && (
             <div className="task-run-btn-wrapper">
               <button className="task-action-btn run" onClick={(e) => { e.stopPropagation(); onRunTask(task.id); }}>
@@ -441,6 +453,7 @@ export default function TaskCard({ task, models, modes, modelsByRunner, modesByR
                     isExecuting={isExecuting}
                     onRunnerChange={onRunnerChange}
                     onModelChange={onModelChange} onModelsRefreshNeeded={onModelsRefreshNeeded} onModeChange={onModeChange}
+                    onOutputModeChange={onOutputModeChange}
                     onRemoveTask={onRemoveTask} onPromptChange={onPromptChange}
                     onRetry={onRetry} onSkip={onSkip} onCancel={onCancel}
                     onForceStart={onForceStart} onMarkComplete={onMarkComplete}

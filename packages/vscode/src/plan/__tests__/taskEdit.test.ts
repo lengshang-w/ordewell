@@ -36,6 +36,10 @@ describe('classifyTaskEdit', () => {
     expect(classifyTaskEdit(JSON.stringify({ mode: 'plan' }))).toEqual({ kind: 'mode', mode: 'plan' });
   });
 
+  it('reads a compact-output mode change', () => {
+    expect(classifyTaskEdit(JSON.stringify({ outputMode: 'raw' }))).toEqual({ kind: 'outputMode', outputMode: 'raw' });
+  });
+
   it('reads a prompt change', () => {
     expect(classifyTaskEdit(JSON.stringify({ prompt: 'rewrite it' }))).toEqual({ kind: 'prompt', prompt: 'rewrite it' });
   });

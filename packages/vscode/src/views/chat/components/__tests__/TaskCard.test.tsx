@@ -24,6 +24,35 @@ function makeTask(overrides: Partial<Task> = {}): Task {
 const emptyModels: DiscoveredModel[] = [];
 
 describe('TaskCard — Run Task button', () => {
+  it('shows Codex output mode below Mode and reports changes', () => {
+    const onOutputModeChange = vi.fn();
+    render(
+      <TaskCard
+        task={makeTask({ assignedRunner: 'codex' })}
+        models={emptyModels}
+        isExecuting={false}
+        onModeChange={vi.fn()}
+        onOutputModeChange={onOutputModeChange}
+      />,
+    );
+
+    act(() => { fireEvent.click(screen.getByText('Test task')); });
+    const output = screen.getByLabelText('Output');
+    expect((output as HTMLSelectElement).value).toBe('compact');
+    fireEvent.change(output, { target: { value: 'raw' } });
+    expect(onOutputModeChange).toHaveBeenCalledWith('t1', 'raw');
+  });
+
+  it('hides the output mode for non-Codex runners', () => {
+    render(
+      <TaskCard task={makeTask()} models={emptyModels} isExecuting={false}
+        onModeChange={vi.fn()} onOutputModeChange={vi.fn()} />,
+    );
+
+    act(() => { fireEvent.click(screen.getByText('Test task')); });
+    expect(screen.queryByLabelText('Output')).toBeNull();
+  });
+
   it('shows Run Task button when not executing and onRunTask is provided', () => {
     render(
       <TaskCard

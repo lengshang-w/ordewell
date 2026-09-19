@@ -3,7 +3,7 @@ import TaskCard from './TaskCard';
 import NewTaskCard from './NewTaskCard';
 import type { TaskDraft } from './NewTaskCard';
 import type { RunnerMode, RunnerOption } from './TaskCard';
-import { Task, DiscoveredModel, TaskModelAssignment } from '@ordewell/core';
+import { Task, DiscoveredModel, TaskModelAssignment, RunnerOutputMode } from '@ordewell/core';
 import { canMergeTasks, canSplitTask } from '@ordewell/core/plan-utils';
 
 interface PlanCardGroupProps {
@@ -25,6 +25,7 @@ interface PlanCardGroupProps {
   onModelChange?: (taskId: string, assignment: TaskModelAssignment) => void;
   onModelsRefreshNeeded?: () => void;
   onModeChange?: (taskId: string, mode: string) => void;
+  onOutputModeChange?: (taskId: string, outputMode: RunnerOutputMode) => void;
   onRemoveTask?: (taskId: string) => void;
   onPromptChange?: (taskId: string, prompt: string) => void;
   onRetry?: (taskId: string) => void;
@@ -56,6 +57,7 @@ export default function PlanCardGroup({
   onModelChange,
   onModelsRefreshNeeded,
   onModeChange,
+  onOutputModeChange,
   onRemoveTask,
   onPromptChange,
   onRetry,
@@ -226,6 +228,7 @@ export default function PlanCardGroup({
                 onModelChange={onModelChange}
                 onModelsRefreshNeeded={onModelsRefreshNeeded}
                 onModeChange={onModeChange}
+                onOutputModeChange={onOutputModeChange}
                 onRemoveTask={onRemoveTask}
                 onPromptChange={onPromptChange}
                 onRetry={onRetry}

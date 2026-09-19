@@ -29,7 +29,7 @@ function toCrlf(text: string): string {
  * as a real terminal resize would.
  */
 export class VsCodeTerminalRunner extends HeadlessRunner {
-  protected override readonly defaultInteractive = true;
+  protected override readonly defaultInteractive = process.platform !== 'win32';
 
   private terminals = new Map<string, vscode.Terminal>();
 
@@ -60,6 +60,7 @@ export class VsCodeTerminalRunner extends HeadlessRunner {
           // Only meaningful when script is present; wrapWithPty ignores it otherwise.
           controlChannel: true,
         });
+        session.configureOutput({ codexExecJson: prepared.codexExecJson, mode: opts.outputMode ?? 'compact' });
         session.start(
           prepared.launch,
           cwd,
@@ -84,7 +85,7 @@ export class VsCodeTerminalRunner extends HeadlessRunner {
 
     session.onOutput((text) => writeEmitter.fire(toCrlf(text)));
     session.onExit((code) => {
-      if (code === 0) closeEmitter.fire(0);
+      if (code === 0) writeEmitter.fire(`\r\n\x1b[32m[ordewell] ${opts.runner} exited with code 0 — terminal retained; close it manually when finished.\x1b[0m\r\n`);
       else writeEmitter.fire(`\r\n\x1b[33m[ordewell] ${opts.runner} exited with code ${code}\x1b[0m\r\n`);
     });
 

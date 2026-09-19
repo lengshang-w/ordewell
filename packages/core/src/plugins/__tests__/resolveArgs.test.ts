@@ -334,13 +334,16 @@ describe('resolveArgs', () => {
 });
 
 describe('resolveArgs — Codex manifest', () => {
-  it('headless build task: exec subcommand, model, effort config override, workspace-write sandbox', () => {
+  it('headless agent task: exec, auto-reviewed approval boundary, disk reads, model, effort, and workspace-write sandbox', () => {
     const result = resolveArgs(CODEX_MANIFEST, {
       prompt: 'do it', mode: 'agent', model: 'gpt-5.6-sol', thinkingEffort: 'high', headless: true,
     });
     expect(result.command).toBe('codex');
     expect(result.args).toEqual([
-      'exec', '--skip-git-repo-check',
+      'exec', '--json', '--skip-git-repo-check',
+      '-c', 'approval_policy="on-request"',
+      '-c', 'approvals_reviewer="auto_review"',
+      '-c', 'sandbox_permissions=["disk-full-read-access"]',
       '-m', 'gpt-5.6-sol',
       '-c', 'model_reasoning_effort=high',
       '--sandbox', 'workspace-write',
@@ -348,12 +351,13 @@ describe('resolveArgs — Codex manifest', () => {
     ]);
   });
 
-  it('interactive task: no exec subcommand, approvals off, same model/effort/sandbox flags', () => {
+  it('interactive task: no exec or auto-review override, but retains safe disk reads', () => {
     const result = resolveArgs(CODEX_MANIFEST, {
       prompt: 'do it', mode: 'agent', model: 'gpt-5.6-terra', thinkingEffort: 'ultra', headless: false,
     });
     expect(result.args).toEqual([
       '-a', 'never',
+      '-c', 'sandbox_permissions=["disk-full-read-access"]',
       '-m', 'gpt-5.6-terra',
       '-c', 'model_reasoning_effort=ultra',
       '--sandbox', 'workspace-write',
@@ -371,6 +375,7 @@ describe('resolveArgs — Codex manifest', () => {
     expect(result.args).toEqual([
       '-a', 'never',
       '-c', 'projects."/w/s".trust_level="trusted"',
+      '-c', 'sandbox_permissions=["disk-full-read-access"]',
       '-m', 'gpt-5.6-sol',
       '--sandbox', 'workspace-write',
       'do it',
@@ -392,7 +397,12 @@ describe('resolveArgs — Codex manifest', () => {
     const result = resolveArgs(CODEX_MANIFEST, {
       prompt: 'do it', mode: 'agent', headless: true, interactive: true,
     });
-    expect(result.args).toEqual(['-a', 'never', '--sandbox', 'workspace-write', 'do it']);
+    expect(result.args).toEqual([
+      '-a', 'never',
+      '-c', 'sandbox_permissions=["disk-full-read-access"]',
+      '--sandbox', 'workspace-write',
+      'do it',
+    ]);
   });
 
   it('quotes a workspace path with spaces as a single TOML-keyed argument', () => {
@@ -407,7 +417,8 @@ describe('resolveArgs — Codex manifest', () => {
       prompt: 'analyze', mode: 'plan', model: 'gpt-5.5', headless: true,
     });
     expect(result.args).toEqual([
-      'exec', '--skip-git-repo-check',
+      'exec', '--json', '--skip-git-repo-check',
+      '-c', 'sandbox_permissions=["disk-full-read-access"]',
       '-m', 'gpt-5.5',
       '--sandbox', 'read-only',
       'analyze',
@@ -420,6 +431,9 @@ describe('resolveArgs — Codex manifest', () => {
     });
     expect(result.args).toContain('--sandbox');
     expect(result.args).toContain('danger-full-access');
+    expect(result.args).toContain('sandbox_permissions=["disk-full-read-access"]');
+    expect(result.args.join(' ')).not.toContain('approval_policy');
+    expect(result.args.join(' ')).not.toContain('approvals_reviewer');
   });
 
   it('omits the effort config pair when no thinking effort is set', () => {
@@ -434,5 +448,7 @@ describe('resolveArgs — Codex manifest', () => {
       prompt: 'go', mode: 'build', model: 'gpt-5.4', headless: true,
     });
     expect(result.args).toContain('workspace-write');
+    expect(result.args).toContain('approval_policy="on-request"');
+    expect(result.args).toContain('approvals_reviewer="auto_review"');
   });
 });

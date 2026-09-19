@@ -10,7 +10,7 @@ import PlanCardGroup from './components/PlanCardGroup';
 import CheckpointPanel from './components/CheckpointPanel';
 import type { RunnerMode } from './components/TaskCard';
 import type { TaskDraft } from './components/NewTaskCard';
-import { LegacyPlanState, DiscoveredModel, TaskModelAssignment, RunnerId } from '@ordewell/core';
+import { LegacyPlanState, DiscoveredModel, TaskModelAssignment, RunnerId, RunnerOutputMode } from '@ordewell/core';
 import type { AiProvider } from '@ordewell/core';
 import { summarizeToolCall } from '@ordewell/core/plan-utils';
 import { isPlanRevision, planSummaryLabel, nextDock } from './planDock';
@@ -765,6 +765,20 @@ export default function App() {
     }
   }, [runners]);
 
+  const handleOutputModeChange = useCallback((taskId: string, outputMode: RunnerOutputMode) => {
+    vscode.postMessage({ type: 'sendMessage', text: JSON.stringify({ outputMode }), runners, actionContext: { type: 'execute', taskId } });
+    const current = planRef.current;
+    if (current) {
+      const updateTasks = (tasks: typeof current.tasks): typeof current.tasks =>
+        tasks.map((t) => {
+          if (t.id === taskId) return { ...t, outputMode };
+          if (t.subtasks.length > 0) return { ...t, subtasks: updateTasks(t.subtasks) };
+          return t;
+        });
+      setPlan({ ...current, tasks: updateTasks(current.tasks) });
+    }
+  }, [runners]);
+
   const handleRetry = useCallback((taskId: string) => {
     vscode.postMessage({ type: 'sendMessage', text: '', runners, actionContext: { type: 'retry', taskId } });
   }, [runners]);
@@ -1036,6 +1050,7 @@ export default function App() {
             onModelChange={handleModelChange}
             onModelsRefreshNeeded={handleModelsRefreshNeeded}
             onModeChange={handleModeChange}
+            onOutputModeChange={handleOutputModeChange}
             onRemoveTask={handleRemoveTask}
             onPromptChange={handlePromptChange}
             onRetry={handleRetry}

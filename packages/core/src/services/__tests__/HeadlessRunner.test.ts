@@ -24,7 +24,11 @@ function fakeRegistry(m: RunnerPluginManifest): RunnerRegistry {
 class FakeChildProcess extends EventEmitter {
   stdout = new EventEmitter();
   stderr = new EventEmitter();
-  stdin = { write: vi.fn() };
+  stdin = {
+    writableEnded: false,
+    write: vi.fn(),
+    end: vi.fn(() => { this.stdin.writableEnded = true; }),
+  };
   killed = false;
   kill = vi.fn((_signal?: string) => { this.killed = true; this.emit('close', 0); return true; });
 }
@@ -109,6 +113,42 @@ describe('HeadlessRunner', () => {
     expect(session.getOutput()).toBe('red line\nwarn');
   });
 
+  it('formats only codex exec JSONL for display while retaining raw evidence', async () => {
+    const m = manifest({
+      name: 'codex',
+      runner: { command: 'codex', argsTemplate: ['exec', '--json', '{{prompt}}'], promptInArgs: true },
+    });
+    const { runner, child } = makeRunner();
+    const session = await runner.spawn(baseOpts(m));
+    const displayed: string[] = [];
+    const evidence: string[] = [];
+    session.onOutput((text) => displayed.push(text));
+    session.onRawOutput?.((text) => evidence.push(text));
+    const json = '{"type":"item.completed","item":{"type":"agent_message","text":"Task complete"}}\n';
+
+    child.stdout.emit('data', Buffer.from(json));
+
+    expect(displayed).toEqual(['Task complete\n']);
+    expect(evidence).toEqual([json]);
+    expect(session.getOutput()).toBe(json);
+  });
+
+  it('keeps codex exec JSONL raw when the spawn requests raw output', async () => {
+    const m = manifest({
+      name: 'codex',
+      runner: { command: 'codex', argsTemplate: ['exec', '--json', '{{prompt}}'], promptInArgs: true },
+    });
+    const { runner, child } = makeRunner();
+    const session = await runner.spawn({ ...baseOpts(m), outputMode: 'raw' });
+    const displayed: string[] = [];
+    session.onOutput((text) => displayed.push(text));
+    const json = '{"type":"turn.started"}\n';
+
+    child.stdout.emit('data', Buffer.from(json));
+
+    expect(displayed).toEqual([json]);
+  });
+
   it('fires onExit with the close code and unregisters the session', async () => {
     const m = manifest();
     const { runner, child } = makeRunner();
@@ -163,13 +203,14 @@ describe('HeadlessRunner', () => {
     expect(runner.activeCount).toBe(0);
   });
 
-  it('forwards write() to the child stdin', async () => {
+  it('closes stdin after starting a non-interactive session and ignores later writes', async () => {
     const m = manifest();
     const { runner, child } = makeRunner();
     const session = await runner.spawn(baseOpts(m));
 
     session.write('y\n');
-    expect(child.stdin.write).toHaveBeenCalledWith('y\n');
+    expect(child.stdin.end).toHaveBeenCalledOnce();
+    expect(child.stdin.write).not.toHaveBeenCalled();
   });
 });
 
