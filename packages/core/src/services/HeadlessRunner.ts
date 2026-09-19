@@ -7,7 +7,8 @@ import { augmentedPath, withPath } from '../utils/shellPath';
 import { stripAnsi, wrapWithPty, type PtyWrapOptions } from '../utils/shell';
 import { planDirectLaunch, type LaunchDeps, type LaunchPlan } from '../utils/launch';
 import { killTree } from '../utils/processTree';
-import { CodexExecJsonFormatter, type RunnerOutputMode } from './CodexExecJsonFormatter';
+import type { RunnerOutputMode } from '../models/Task';
+import { CodexExecJsonFormatter } from './CodexExecJsonFormatter';
 
 export type SpawnFn = (
   command: string,

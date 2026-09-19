@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import ModelSelector, { getModelClass, providerLabel } from './ModelSelector';
 import { taskOrderLabel } from '@ordewell/core/order-labels';
-import type { Task, DiscoveredModel, TaskModelAssignment } from '@ordewell/core';
+import type { Task, DiscoveredModel, TaskModelAssignment, RunnerOutputMode } from '@ordewell/core';
 import { TaskCheck } from './TaskCard';
 import { runnerOptionsFor } from './TaskCard';
 import type { RunnerMode, RunnerOption } from './TaskCard';
@@ -21,6 +21,7 @@ interface SubTaskCardProps {
   onModelChange?: (taskId: string, assignment: TaskModelAssignment) => void;
   onModelsRefreshNeeded?: () => void;
   onModeChange?: (taskId: string, mode: string) => void;
+  onOutputModeChange?: (taskId: string, outputMode: RunnerOutputMode) => void;
   onRemoveTask?: (taskId: string) => void;
   onPromptChange?: (taskId: string, prompt: string) => void;
   onRetry?: (taskId: string) => void;
@@ -52,7 +53,7 @@ const RUNNER_ABBREV: Record<string, string> = {
   'opencode': 'OC',
 };
 
-export default function SubTaskCard({ task, parentTask, models, modes, runners, effectiveRunner, configuredProviders, modelApiMapping, isExecuting, onRunnerChange, onModelChange, onModelsRefreshNeeded, onModeChange, onRemoveTask, onPromptChange, onRetry: _onRetry, onSkip, onCancel, onForceStart, onMarkComplete, onMarkIncomplete, onRunTask }: SubTaskCardProps) {
+export default function SubTaskCard({ task, parentTask, models, modes, runners, effectiveRunner, configuredProviders, modelApiMapping, isExecuting, onRunnerChange, onModelChange, onModelsRefreshNeeded, onModeChange, onOutputModeChange, onRemoveTask, onPromptChange, onRetry: _onRetry, onSkip, onCancel, onForceStart, onMarkComplete, onMarkIncomplete, onRunTask }: SubTaskCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [editingPrompt, setEditingPrompt] = useState<string | null>(null);
 
@@ -169,6 +170,17 @@ export default function SubTaskCard({ task, parentTask, models, modes, runners, 
                 {activeModes.map((m) => (
                   <option key={m.id} value={m.id}>{m.label} — {m.description}</option>
                 ))}
+              </select>
+            </div>
+          )}
+
+          {!isExecuting && task.type === 'ai' && task.assignedRunner === 'codex' && onOutputModeChange && (
+            <div className="model-selector" style={{ marginTop: '8px' }}>
+              <label htmlFor={`subtask-output-mode-${task.id}`}>Output</label>
+              <select id={`subtask-output-mode-${task.id}`} value={task.outputMode ?? 'compact'}
+                onChange={(e) => onOutputModeChange(task.id, e.target.value as RunnerOutputMode)}>
+                <option value="compact">Compact — concise activity stream</option>
+                <option value="raw">Raw — full Codex output</option>
               </select>
             </div>
           )}
